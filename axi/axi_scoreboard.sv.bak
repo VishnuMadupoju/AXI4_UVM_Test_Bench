@@ -1,0 +1,103 @@
+///////////////////////////////////////////////////////////////////////
+// File Name : axi_scoreboard.sv
+// version   : 0.1
+// -----------------axi_scoreboard.sv-------------------------------
+//
+/////////////////////////////////////////////////////////////////////
+
+
+ class axi_scoreboard extends uvm_scoreboard;
+   `uvm_component_utils(axi_scoreboard);
+   
+   function new(string name , uvm_component parent =null);
+     super.new(name, parent);
+   endfunction    
+   
+   uvm_analysis_imp #(axi_packet, axi_scoreboard) m_sc_imp;
+   uvm_analysis_imp #(axi_packet, axi_scoreboard) m_sc_imp_write;
+
+   bit [DATA_WIDTH-1:0] mem[(2**VALID_ADDR_WIDTH)-1:0];
+  
+   bit  [ID_WIDTH-1:0]    s_axi_awid_reg;
+   bit  [ADDR_WIDTH-1:0]  s_axi_awaddr_reg;
+   bit  [7:0]             s_axi_awlen_reg;
+   bit  [2:0]             s_axi_awsize_reg;
+   bit  [1:0]             s_axi_awburst_reg;
+   bit                    s_axi_awlock_reg;
+   bit  [3:0]             s_axi_awcache_reg;
+   bit  [2:0]             s_axi_awprot_reg;
+   bit                    s_axi_awready_reg;
+   bit                    s_axi_awvalid_reg;
+   
+
+   function void build_phase(uvm_phase phase);
+     super.build_phase(phase);
+     m_sc_imp        = new("m_sc_imp",this);
+     m_sc_imp_write  = new("m_sc_imp_write",this);
+   endfunction
+   
+   virtual function void write(axi_packet pkt);
+     pkt.print();
+    // AXI Design DUT
+     fork 
+      write_address(pkt); 
+    //  write_data (pkt);
+     join
+   endfunction  
+
+   function write_address( input axi_packet pkt);
+     if(pkt.s_axi_awvalid && pkt.s_axi_awready)
+     begin
+        s_axi_awid_reg     = pkt.s_axi_awid;
+        s_axi_awaddr_reg   = pkt.s_axi_awaddr;    
+        s_axi_awlen_reg    = pkt.s_axi_awlen;    
+        s_axi_awsize_reg   = pkt.s_axi_awsize;    
+        s_axi_awburst_reg  = pkt.s_axi_awburst;    
+        s_axi_awlock_reg   = pkt.s_axi_awlock;    
+        s_axi_awcache_reg  = pkt.s_axi_awcache;    
+        s_axi_awprot_reg   = pkt.s_axi_awprot;    
+     end
+   endfunction
+
+
+   function write_data(input axi_packet pkt);
+     if(pkt.s_axi_wvalid && pkt.s_axi_wready)
+     begin
+       
+      `uvm_info("SCO","------- Enterd The dragon-----",UVM_NONE);
+       write_data_strb(s_axi_awaddr_reg, pkt);
+     // `uvm_info("SCO","------- OVER The dragon-----",UVM_NONE);
+     end   
+   endfunction
+       
+       
+  // Write strobe logic to write data to the DUT  
+       
+   function write_data_strb(input s_axi_awaddr_reg,input axi_packet pkt);
+     for(int i= 0; i < STRB_WIDTH ; i++) 
+     begin
+      `uvm_info("SCO",$sformatf("Values of strobe is %0b",pkt.s_axi_wstrb),UVM_NONE);
+       if(pkt.s_axi_wstrb[i]==0)
+       begin
+         for(int k=0 ;i< STRB_WIDTH ; k++)
+         begin
+           mem[s_axi_awaddr_reg]  = mem[s_axi_awaddr_reg];
+           s_axi_awaddr_reg ++;
+         end
+       end
+       else
+       begin
+        for(int j=0 ;j < STRB_WIDTH -1 ;j++)
+        begin
+          mem[s_axi_awaddr_reg]  = pkt.s_axi_wdata_m[i*8+:8];
+          `uvm_info("SCO",$sformtf("Data written successfully %0b",mem[s_axi_awaddr_reg]),UVM_NONE);
+          s_axi_awaddr_reg ++;
+        end
+       end
+     end
+   endfunction 
+
+
+
+
+ endclass

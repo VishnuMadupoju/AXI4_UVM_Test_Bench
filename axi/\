@@ -1,0 +1,90 @@
+/////////////////////////////////////////////////////////////////////////
+//
+// File Name :axi_driver.sv
+// version   :0.1 
+// ------------axi_driver.sv-----------------
+///////////////////////////////////////////////////////////////////////
+
+
+    
+`ifndef AXI_DRIVER
+`define AXI_DRIVER
+
+
+  class axi_driver extends uvm_driver#(axi_packet);
+   
+    `uvm_component_utils(axi_driver);
+   
+     virtual  intf_axi vif;
+   
+     function new(string name ,uvm_component parent =null);
+       super.new(name,parent);
+     endfunction
+   
+    virtual function void start_of_simulation_phase(uvm_phase phase);
+      super.start_of_simulation_phase(phase);
+      `uvm_info("DRIVER",$sformatf("In the component %0s",get_full_name()),UVM_HIGH);
+    endfunction 
+  
+    function void build_phase(uvm_phase phase);
+      super.build_phase(phase);
+      uvm_config_db #(virtual intf_axi)::get(this,"","vif",vif);
+    endfunction
+    
+    virtual task run_phase(uvm_phase phase);
+  
+    forever begin
+
+      seq_item_port.get_next_item(req);
+      req.print();
+      
+      vif.s_axi_bid     = req.s_axi_bid;
+      vif.s_axi_bresp   = req.s_axi_bresp;
+      vif.s_axi_bvalid  = req.s_axi_bvalid;
+      vif.s_axi_bready  = req.s_axi_bready;
+      vif.s_axi_arid    = req.s_axi_arid;
+      vif.s_axi_araddr  = req.s_axi_araddr;
+      vif.s_axi_arlen   = req.s_axi_arlen;
+      vif.s_axi_arsize  = req.s_axi_arsize;
+      vif.s_axi_arburst = req.s_axi_arburst;
+      vif.s_axi_arlock  = req.s_axi_arlock;
+      vif.s_axi_arcache = req.s_axi_arcache;
+      vif.s_axi_arprot  = req.s_axi_arprot;
+      vif.s_axi_arvalid = req.s_axi_arvalid;
+      vif.s_axi_arready = req.s_axi_arready;
+      vif.s_axi_rid     = req.s_axi_rid;
+      vif.s_axi_rdata   = req.s_axi_rdata;
+      vif.s_axi_rresp   = req.s_axi_rresp;
+      vif.s_axi_rlast   = req.s_axi_rlast;
+      vif.s_axi_rvalid  = req.s_axi_rvalid;
+      vif.s_axi_rready  = req.s_axi_rready;
+      @ (vif.clk);
+      seq_item_port.item_done();
+    end
+   endtask
+ 
+   task write();
+     if(opr == WRITE);
+       vif.s_axi_awid    = s_axi_awid;
+       vif.s_axi_awaddr  = req.s_axi_awaddr;
+       vif.s_axi_awlen   = req.s_axi_awlen;
+       vif.s_axi_awsize  = req.s_axi_awsize;
+       vif.s_axi_awburst = req.s_axi_awburst;
+       vif.s_axi_awlock  = 'b0;
+       vif.s_axi_awcache = 'b0;
+       vif.s_axi_awprot  = 'b0;
+       vif.s_axi_awvalid = req.s_axi_awvalid;
+       vif.s_axi_awready = req.s_axi_awready;
+       vif.s_axi_wdata   = req.s_axi_wdata;
+       vif.s_axi_wstrb   = req.s_axi_wstrb;
+       vif.s_axi_wlast   = req.s_axi_wlast;
+       vif.s_axi_wvalid  = req.s_axi_wvalid;
+       vif.s_axi_wready  = req.s_axi_wready;
+   endtask 
+   
+  endclass  
+
+
+
+`endif  // AXI
+ 
